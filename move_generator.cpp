@@ -331,3 +331,17 @@ void printMoveList(const MoveList list) {
 	}
 	cout << "total: " << list.count << endl;
 }
+
+bool moveExists(Board &position, const int move) {
+	MoveList list;
+	generateMoves(position, list);
+
+	for (int i = 0; i < list.count; i++) {
+		if (list.moves[i].move == move) {
+			bool validMove = makeMove(position, list.moves[i].move);
+			unmakeMove(position);
+			return validMove;
+		}
+	}
+	return false;
+}

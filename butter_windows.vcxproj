@@ -120,6 +120,7 @@
     <ClCompile Include="make_move.cpp" />
     <ClCompile Include="move_generator.cpp" />
     <ClCompile Include="perft.cpp" />
+    <ClCompile Include="pv_table.cpp" />
     <ClCompile Include="search.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -127,6 +128,7 @@
     <ClInclude Include="board.h" />
     <ClInclude Include="evaluate.h" />
     <ClInclude Include="move_generation.h" />
+    <ClInclude Include="search.h" />
     <ClInclude Include="validate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

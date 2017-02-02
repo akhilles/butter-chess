@@ -3,6 +3,7 @@
 #include "validate.h"
 #include <iostream>
 #include <string>
+#include <Windows.h>
 
 using namespace std;
 
@@ -35,6 +36,8 @@ void perftRoot(const string fen, const int depth) {
 }
 
 void perftDivided(const string fen, const int depth) {
+	U64 startTime = GetTickCount64();
+
 	Board position;
 	initBoard(position, fen);
 	printBoard(position);
@@ -54,4 +57,7 @@ void perftDivided(const string fen, const int depth) {
 		cout << moveToString(move) << " (" << move << "): " << oldNodes << endl;
 	}
 	cout << "total: " << leafNodes << endl;
+
+	double elapsed_secs = (GetTickCount64() - startTime) / 1000.0;
+	cout << "elapsed: " << elapsed_secs << endl;
 }

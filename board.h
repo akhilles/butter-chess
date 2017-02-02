@@ -6,6 +6,7 @@ typedef unsigned long long U64;
 
 const int NUM_SQUARES = 64;
 const int MAX_GAME_MOVES = 2048;
+const int MAX_DEPTH = 64;
 
 #define getSquare(file, rank) (((rank) * 8) + (file))
 #define onBoard(file, rank) (file >= FILE_A && file <= FILE_H && rank >= RANK_1 && rank <= RANK_8)
@@ -44,6 +45,16 @@ enum {
 	A8, B8, C8, D8, E8, F8, G8, H8,
 };
 
+struct PVEntry {
+	U64 hashKey;
+	int move;
+};
+
+struct PVTable {
+	PVEntry *entries;
+	int numEntries;
+};
+
 struct Undo {
 	int move;
 
@@ -67,6 +78,9 @@ struct Board {
 	int fiftyMoveCounter;
 	U64 hashKey;
 	Undo history[MAX_GAME_MOVES];
+
+	PVTable pvTable;
+	int pvArray[MAX_DEPTH];
 };
 
 extern int fileArray[64];

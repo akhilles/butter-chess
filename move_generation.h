@@ -51,6 +51,7 @@ extern bool underCheck(const Board &position, int side);
 
 extern bool makeMove(Board &position, const int move);
 extern void unmakeMove(Board &position);
+extern bool moveExists(Board &position, const int move);
 
 extern std::string moveToString(const int move);
 extern void printMoveList(const MoveList list);

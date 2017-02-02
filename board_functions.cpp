@@ -2,6 +2,7 @@
 #include "bitboards.h"
 #include "evaluate.h"
 #include "validate.h"
+#include "search.h"
 #include <string>
 #include <iostream>
 
@@ -58,7 +59,7 @@ void initBoard(Board &position, string fen) {
 	position.side = ((side == 'w') ? WHITE : BLACK);
 
 	string part2 = fen.substr(fenPos + 2, 40);
-	int spaceIndex1 = part2.find(" ", 0) + 1;
+	int spaceIndex1 = int(part2.find(" ", 0)) + 1;
 	string castlePermissions = part2.substr(0, spaceIndex1);
 	position.castlePermissions = 0;
 	if (castlePermissions.find('K') != string::npos) position.castlePermissions |= WHITE_KING_CASTLE;
@@ -66,7 +67,7 @@ void initBoard(Board &position, string fen) {
 	if (castlePermissions.find('k') != string::npos) position.castlePermissions |= BLACK_KING_CASTLE;
 	if (castlePermissions.find('q') != string::npos) position.castlePermissions |= BLACK_QUEEN_CASTLE;
 
-	int enPassantLength = part2.find(" ", spaceIndex1) - spaceIndex1;
+	int enPassantLength = (int) (part2.find(" ", spaceIndex1)) - spaceIndex1;
 	string enPassantSquare = part2.substr(spaceIndex1, enPassantLength);
 
 	if (enPassantSquare == "-") position.enPassantSquare = 64;
@@ -83,6 +84,8 @@ void initBoard(Board &position, string fen) {
 	position.hashKey = generateHashKey(position);
 	position.material[WHITE] = materialValueWhite(position);
 	position.material[BLACK] = materialValueBlack(position);
+
+	initPVTable(position.pvTable);
 }
 
 bool checkHashKey(const Board &position) {
