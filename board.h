@@ -81,6 +81,9 @@ struct Board {
 
 	PVTable pvTable;
 	int pvArray[MAX_DEPTH];
+
+	int searchHistory[14][64];
+	int searchKillers[2][MAX_DEPTH];
 };
 
 extern int fileArray[64];

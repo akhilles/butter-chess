@@ -19,3 +19,8 @@ int materialValueBlack(const Board &position) {
 		 + bitCount(bP) * pieceValue[BLACK_PAWN]
 		 + pieceValue[BLACK_KING];
 }
+
+int evaluatePosition(const Board &position) {
+
+	return 0;
+}
