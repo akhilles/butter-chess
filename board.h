@@ -71,8 +71,6 @@ struct Board {
 	int side;
 	int ply, histPly;
 
-	int material[2];
-
 	int enPassantSquare;
 	int castlePermissions;
 	int fiftyMoveCounter;

@@ -70,7 +70,5 @@ void printBoard(const Board &position) {
 	if (castlePermissions & BLACK_QUEEN_CASTLE) cout << "q";
 	cout << endl;
 	cout << "en passant: " << numSquareToString(position.enPassantSquare) << endl;
-	cout << "white value: " << position.material[WHITE] << endl;
-	cout << "black value: " << position.material[BLACK] << endl;
 	cout << "hash key: " << hex << position.hashKey << dec << endl;
 }

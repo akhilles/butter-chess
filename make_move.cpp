@@ -73,10 +73,8 @@ bool makeMove(Board &position, const int move) {
 			int promotedPiece = promoted(move);
 			flipPiece(position, movingPiece, to, position.side);
 			flipPiece(position, promotedPiece, to, position.side);
-			position.material[position.side] += pieceValue[promotedPiece] - pieceValue[movingPiece];
 		}
 		flipPiece(position, capturedPiece, target, position.side ^ 1);
-		position.material[position.side ^ 1] -= pieceValue[capturedPiece];
 	}
 	else if (isCastle(move)) {
 		// is castle
@@ -99,7 +97,6 @@ bool makeMove(Board &position, const int move) {
 		int promotedPiece = promoted(move);
 		flipPiece(position, movingPiece, to, position.side);
 		flipPiece(position, promotedPiece, to, position.side);
-		position.material[position.side] += pieceValue[promotedPiece] - pieceValue[movingPiece];
 	}
 	else if (movingPiece == WHITE_PAWN || movingPiece == BLACK_PAWN) {
 		position.fiftyMoveCounter = 0;
@@ -112,7 +109,6 @@ bool makeMove(Board &position, const int move) {
 	HASH_SIDE;
 
 	//assert(checkHashKey(position));
-	//assert(checkMaterialCount(position));
 
 	if (underCheck(position, position.side ^ 1)) {
 		unmakeMove(position);
@@ -142,7 +138,6 @@ void unmakeMove(Board &position) {
 		int promotedPiece = promoted(move);
 		position.pieceBB[promotedPiece] ^= (1ULL << to);
 		position.pieceBB[movingPiece] ^= (1ULL << to);
-		position.material[position.side] += pieceValue[movingPiece] - pieceValue[promotedPiece];
 	}
 
 	position.pieceBB[movingPiece] ^= ((1ULL << from) | (1ULL << to));
@@ -158,7 +153,6 @@ void unmakeMove(Board &position) {
 		int capturedPiece = captured(move);
 		position.pieceBB[capturedPiece] ^= (1ULL << target);
 		position.pieceBB[position.side ^ 1] ^= (1ULL << target);
-		position.material[position.side ^ 1] += pieceValue[capturedPiece];
 	}
 	else if (isCastle(move)) {
 		// was castle
@@ -180,6 +174,4 @@ void unmakeMove(Board &position) {
 
 	position.occupiedBB = position.pieceBB[WHITE] | position.pieceBB[BLACK];
 	position.emptyBB = ~position.occupiedBB;
-
-	//assert(checkMaterialCount(position));
 }

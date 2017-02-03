@@ -82,8 +82,6 @@ void initBoard(Board &position, string fen) {
 	position.emptyBB = ~position.occupiedBB;
 
 	position.hashKey = generateHashKey(position);
-	position.material[WHITE] = materialValueWhite(position);
-	position.material[BLACK] = materialValueBlack(position);
 
 	initPVTable(position.pvTable);
 }
@@ -97,26 +95,4 @@ bool checkHashKey(const Board &position) {
 		printBoard(position);
 	}
 	return valid;
-}
-
-bool checkMaterialCount(const Board &position) {
-	bool whiteMaterialValid = materialValueWhite(position) == position.material[WHITE];
-	bool blackMaterialValid = materialValueBlack(position) == position.material[BLACK];
-	if (!whiteMaterialValid) {
-		printBoard(position);
-		cout << "white material: " << position.material[WHITE] << endl;
-		cout << "expected:       " << materialValueWhite(position) << endl;
-		for (int i = 0; i < position.histPly; i++) {
-			debugMove(position.history[i].move);
-		}
-	}
-	if (!blackMaterialValid) {
-		printBoard(position);
-		cout << "black material: " << position.material[BLACK] << endl;
-		cout << "expected:       " << materialValueBlack(position) << endl;
-		for (int i = 0; i < position.histPly; i++) {
-			debugMove(position.history[i].move);
-		}
-	}
-	return whiteMaterialValid && blackMaterialValid;
 }
