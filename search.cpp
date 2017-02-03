@@ -3,6 +3,7 @@
 
 static void checkUp() {
 	// check for interrupt from GUI
+
 }
 
 static void clearForSearch(Board &position, SearchInfo &info) {
