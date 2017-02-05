@@ -3,8 +3,8 @@
 #include "board.h"
 
 struct SearchInfo {
-	int startTime;
-	int endTime;
+	long startTime;
+	long endTime;
 	int depth;
 
 	int depthSet;
@@ -16,8 +16,12 @@ struct SearchInfo {
 	bool infinite;
 	bool quit;
 	bool stopped;
+
+	float failHigh;
+	float failHighFirst;
 };
 
+extern void clearPVTable(PVTable &table);
 extern void initPVTable(PVTable &table);
 extern void storePVMove(Board &position, int move);
 extern int probePVTable(const Board &position);

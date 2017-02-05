@@ -312,6 +312,7 @@ void debugMove(int move) {
 }
 
 string moveToString(const int move) {
+	if (move < 0) return "!!!!";
 	char pieceIds[14] = { 'q','q','q','n','b','r','q','q','q','n','b','r','q','q' };
 	int fromSquare = from(move);
 	int toSquare = to(move);
