@@ -1,9 +1,6 @@
 #include "board.h"
 #include "bitboards.h"
 #include "evaluate.h"
-#include <iostream>
-
-using namespace std;
 
 const int evaluatePieceBoards(const int valueBoard[64], const int pieceValue, U64 whitePieces, U64 blackPieces) {
 	int score = 0;
@@ -37,7 +34,7 @@ int evaluatePosition(const Board &position) {
 	lateEval += evaluatePieceBoards(kingTableLate, 0, wK, bK);
 
 	double gameProgress = (bitCount(position.occupiedBB)) / 32.0;
-	int evaluation = (int) (gameProgress * earlyEval) + ((1 - gameProgress) * lateEval);
+	int evaluation = int((gameProgress * earlyEval) + ((1 - gameProgress) * lateEval));
 
 	if (position.side == WHITE) {
 		return evaluation;

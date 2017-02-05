@@ -34,7 +34,6 @@ int main()
 			case 'q': return 0; break;
 			case 't': unmakeMove(position); break;
 			case 'p': perftDivided(STARTING_FEN, 6); break;
-			case 'e': evaluatePosition(position); break;
 			case 's': search(position); break;
 			default: makeMove(position, parseMove(position, input)); break;
 		}
