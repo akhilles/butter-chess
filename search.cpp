@@ -24,9 +24,6 @@ static void clearForSearch(Board &position, SearchInfo &info) {
 		}
 	}
 
-	// should principal variation table be cleared????
-	// clearPVTable(position.pvTable);
-
 	position.ply = 0;
 
 	info.startTime = (long) GetTickCount64();
@@ -63,12 +60,69 @@ static void pickNextMove(int moveNum, MoveList &list) {
 }
 
 static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
-	return evaluatePosition(position);
+	info.nodes++;
+
+	if (isRepetition(position) || position.fiftyMoveCounter >= 100) {
+		return 0;
+	}
+	if (position.ply >= MAX_DEPTH) {
+		return evaluatePosition(position);
+	}
+
+	int score = evaluatePosition(position);
+
+	if (score >= beta) {
+		return beta;
+	}
+	if (score > alpha) {
+		alpha = score;
+	}
+
+	MoveList list;
+	generateCaptures(position, list);
+
+	int legal = 0;
+	int oldAlpha = alpha;
+	int bestMove = -1;
+	score = -100000;
+
+	for (int i = 0; i < list.count; i++) {
+		pickNextMove(i, list);
+
+		int move = list.moves[i].move;
+		if (!makeMove(position, move)) {
+			continue;
+		}
+
+		legal++;
+		score = -quiescence(position, info, -beta, -alpha);
+		unmakeMove(position);
+
+		if (score > alpha) {
+			if (score >= beta) {
+				if (legal == 1) {
+					info.failHighFirst++;
+				}
+				info.failHigh++;
+				return beta;
+			}
+			alpha = score;
+			bestMove = move;
+		}
+	}
+
+	if (oldAlpha != alpha) {
+		storePVMove(position, bestMove);
+	}
+
+	return alpha;
 }
+
 static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int depth, bool doNull) {
-	// pre-search checks,  By:Nithin Tammishetti
+	// pre-search checks
 
 	if (depth == 0) {
+		//return evaluatePosition(position);
 		return quiescence(position, info, alpha, beta);
 	}
 
@@ -169,6 +223,5 @@ void searchPosition(Board &position, SearchInfo &info) {
 		cout << " )" << endl;
 		if (info.failHigh == 0) info.failHigh = 1;
 		cout << "ordering: " << (info.failHighFirst / info.failHigh) * 100 << "%" << endl;
-		//Made by: Nithin Tammishetti , Akhil Velagapudi
 	}
 }

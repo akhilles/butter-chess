@@ -56,3 +56,4 @@ extern bool moveExists(Board &position, const int move);
 extern std::string moveToString(const int move);
 extern void printMoveList(const MoveList list);
 extern void generateMoves(const Board &position, MoveList &list);
+extern void generateCaptures(const Board &position, MoveList &list);

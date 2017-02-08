@@ -11,7 +11,7 @@ using namespace std;
 
 void search(Board &position) {
 	SearchInfo info;
-	info.depth = 6;
+	info.depth = 7;
 	searchPosition(position, info);
 }
 
