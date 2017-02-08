@@ -1,17 +1,31 @@
 #include "board.h"
 #include "bitboards.h"
 #include "move_generation.h"
+#include "evaluate.h"
 #include <iostream>
 #include <string>
 
 using namespace std;
 
-void addQuietMove(const Board &position, const int move, MoveList &list) {
-	list.moves[list.count++] = { move, 0 };
+void addQuietMove(const Board &position, MoveList &list, const int fromSquare, const int toSquare, const int movingPiece, const int promotingPiece, const int flags) {
+	int move = generateMove(fromSquare, toSquare, 0, movingPiece, promotingPiece, flags);
+	int score;
+	if (position.searchKillers[0][position.ply] == move) {
+		score = 8000000;
+	}
+	else if (position.searchKillers[1][position.ply] == move) {
+		score = 7000000;
+	}
+	else {
+		score = position.searchHistory[movingPiece][toSquare];
+	}
+	list.moves[list.count++] = { move, score };
 }
 
-void addCaptureMove(const Board &position, const int move, MoveList &list) {
-	list.moves[list.count++] = { move, 0 };
+void addCaptureMove(const Board &position, MoveList &list, const int fromSquare, const int toSquare, const int capturedPiece, const int movingPiece, const int promotingPiece, const int flags) {
+	int move = generateMove(fromSquare, toSquare, capturedPiece, movingPiece, promotingPiece, flags);
+	int score = pieceValue[capturedPiece] - pieceValue[movingPiece] + 10000000;
+	list.moves[list.count++] = { move, score};
 }
 
 int getWhitePieceAt(const Board &position, U64 targetSquare) {
@@ -46,16 +60,14 @@ static void generatorRoutineWhite(const Board &position, int piece, MoveList &li
 		U64 moves = attackBoard & position.emptyBB;
 		while (moves) {
 			toIndex = peekBit(moves); popBit(moves);
-			int move = generateMove(fromIndex, toIndex, 0, piece, 0, 0);
-			addQuietMove(position, move, list);
+			addQuietMove(position, list, fromIndex, toIndex, piece, 0, 0);
 		}
 
 		U64 attacks = attackBoard & position.pieceBB[BLACK];
 		while (attacks) {
 			toIndex = peekBit(attacks); popBit(attacks);
 			int capturedPiece = getBlackPieceAt(position, setMask[toIndex]);
-			int move = generateMove(fromIndex, toIndex, capturedPiece, piece, 0, 0);
-			addCaptureMove(position, move, list);
+			addCaptureMove(position, list, fromIndex, toIndex, capturedPiece, piece, 0, 0);
 		}
 	}
 }
@@ -78,16 +90,14 @@ static void generatorRoutineBlack(const Board &position, int piece, MoveList &li
 		U64 moves = attackBoard & position.emptyBB;
 		while (moves) {
 			toIndex = peekBit(moves); popBit(moves);
-			int move = generateMove(fromIndex, toIndex, 0, piece, 0, 0);
-			addQuietMove(position, move, list);
+			addQuietMove(position, list, fromIndex, toIndex, piece, 0, 0);
 		}
 
 		U64 attacks = attackBoard & position.pieceBB[WHITE];
 		while (attacks) {
 			toIndex = peekBit(attacks); popBit(attacks);
 			int capturedPiece = getWhitePieceAt(position, setMask[toIndex]);
-			int move = generateMove(fromIndex, toIndex, capturedPiece, piece, 0, 0);
-			addCaptureMove(position, move, list);
+			addCaptureMove(position, list, fromIndex, toIndex, capturedPiece, piece, 0, 0);
 		}
 	}
 }
@@ -98,59 +108,63 @@ static void generateWhitePawnMoves(const Board &position, MoveList &list) {
 	int to;
 	while (advance1 & NOT_RANK_8_MASK) {
 		to = peekBit(advance1 & NOT_RANK_8_MASK); popBit(advance1);
-		int move = generateMove(to - 8, to, 0, WHITE_PAWN, 0, 0);
-		addQuietMove(position, move, list);
+		addQuietMove(position, list, to - 8, to, WHITE_PAWN, 0, 0);
 	}
 	while (advance1) {
 		to = peekBit(advance1); popBit(advance1);
 		int from = to - 8;
-		addQuietMove(position, generateMove(from, to, 0, WHITE_PAWN, WHITE_QUEEN, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, WHITE_PAWN, WHITE_KNIGHT, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, WHITE_PAWN, WHITE_BISHOP, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, WHITE_PAWN, WHITE_ROOK, 0), list);
+		addQuietMove(position, list, from, to, WHITE_PAWN, WHITE_QUEEN, 0);
+		addQuietMove(position, list, from, to, WHITE_PAWN, WHITE_KNIGHT, 0);
+		addQuietMove(position, list, from, to, WHITE_PAWN, WHITE_BISHOP, 0);
+		addQuietMove(position, list, from, to, WHITE_PAWN, WHITE_ROOK, 0);
 	}
 	while (advance2) {
 		to = peekBit(advance2); popBit(advance2);
-		int move = generateMove(to - 16, to, 0, WHITE_PAWN, 0, FLAG_PS);
-		addQuietMove(position, move, list);
+		addQuietMove(position, list, to - 16, to, WHITE_PAWN, 0, FLAG_PS);
 	}
 
 	U64 leftAttacks = (position.pieceBB[WHITE_PAWN] << 7) & NOT_FILE_H_MASK & (position.pieceBB[BLACK] | setMask[position.enPassantSquare]);
 	while (leftAttacks & NOT_RANK_8_MASK) {
 		to = peekBit(leftAttacks & NOT_RANK_8_MASK); popBit(leftAttacks);
 		int from = to - 7;
-		int captured = getBlackPieceAt(position, 1ULL << to);
-		int move = generateMove(from, to, captured, WHITE_PAWN, 0, 0);
-		if (to == position.enPassantSquare) move = generateMove(from, to, BLACK_PAWN, WHITE_PAWN, 0, FLAG_EP);
-		addCaptureMove(position, move, list);
+		if (to == position.enPassantSquare) {
+			addCaptureMove(position, list, from, to, BLACK_PAWN, WHITE_PAWN, 0, FLAG_EP);
+		}
+		else {
+			int captured = getBlackPieceAt(position, 1ULL << to); 
+			addCaptureMove(position, list, from, to, captured, WHITE_PAWN, 0, 0);
+		}
 	}
 	while (leftAttacks) {
 		to = peekBit(leftAttacks); popBit(leftAttacks);
 		int from = to - 7;
 		int captured = getBlackPieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_QUEEN, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_KNIGHT, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_BISHOP, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_ROOK, 0), list);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_QUEEN, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_KNIGHT, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_BISHOP, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_ROOK, 0);
 	}
 
 	U64 rightAttacks = (position.pieceBB[WHITE_PAWN] << 9) & NOT_FILE_A_MASK & (position.pieceBB[BLACK] | setMask[position.enPassantSquare]);
 	while (rightAttacks & NOT_RANK_8_MASK) {
 		to = peekBit(rightAttacks & NOT_RANK_8_MASK); popBit(rightAttacks);
 		int from = to - 9;
-		int captured = getBlackPieceAt(position, 1ULL << to);
-		int move = generateMove(from, to, captured, WHITE_PAWN, 0, 0);
-		if (to == position.enPassantSquare) move = generateMove(from, to, BLACK_PAWN, WHITE_PAWN, 0, FLAG_EP);
-		addCaptureMove(position, move, list);
+		if (to == position.enPassantSquare) {
+			addCaptureMove(position, list, from, to, BLACK_PAWN, WHITE_PAWN, 0, FLAG_EP);
+		}
+		else {
+			int captured = getBlackPieceAt(position, 1ULL << to);
+			addCaptureMove(position, list, from, to, captured, WHITE_PAWN, 0, 0);
+		}
 	}
 	while (rightAttacks) {
 		to = peekBit(rightAttacks); popBit(rightAttacks);
 		int from = to - 9;
 		int captured = getBlackPieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_QUEEN, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_KNIGHT, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_BISHOP, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_PAWN, WHITE_ROOK, 0), list);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_QUEEN, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_KNIGHT, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_BISHOP, 0);
+		addCaptureMove(position, list, from, to, captured, WHITE_PAWN, WHITE_ROOK, 0);
 	}
 }
 
@@ -161,20 +175,18 @@ static void generateBlackPawnMoves(const Board &position, MoveList &list) {
 	while (advance1 & RANK_1_MASK) {
 		to = peekBit(advance1 & RANK_1_MASK); popBit(advance1);
 		int from = to + 8;
-		addQuietMove(position, generateMove(from, to, 0, BLACK_PAWN, BLACK_QUEEN, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, BLACK_PAWN, BLACK_KNIGHT, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, BLACK_PAWN, BLACK_BISHOP, 0), list);
-		addQuietMove(position, generateMove(from, to, 0, BLACK_PAWN, BLACK_ROOK, 0), list);
+		addQuietMove(position, list, from, to, BLACK_PAWN, BLACK_QUEEN, 0);
+		addQuietMove(position, list, from, to, BLACK_PAWN, BLACK_KNIGHT, 0);
+		addQuietMove(position, list, from, to, BLACK_PAWN, BLACK_BISHOP, 0);
+		addQuietMove(position, list, from, to, BLACK_PAWN, BLACK_ROOK, 0);
 	}
 	while (advance1) {
 		to = peekBit(advance1); popBit(advance1);
-		int move = generateMove(to + 8, to, 0, BLACK_PAWN, 0, 0);
-		addQuietMove(position, move, list);
+		addQuietMove(position, list, to + 8, to, BLACK_PAWN, 0, 0);
 	}
 	while (advance2) {
 		to = peekBit(advance2); popBit(advance2);
-		int move = generateMove(to + 16, to, 0, BLACK_PAWN, 0, FLAG_PS);
-		addQuietMove(position, move, list);
+		addQuietMove(position, list, to + 16, to, BLACK_PAWN, 0, FLAG_PS);
 	}
 
 	U64 leftAttacks = (position.pieceBB[BLACK_PAWN] >> 7) & NOT_FILE_A_MASK & (position.pieceBB[WHITE] | setMask[position.enPassantSquare]);
@@ -182,18 +194,21 @@ static void generateBlackPawnMoves(const Board &position, MoveList &list) {
 		to = peekBit(leftAttacks & RANK_1_MASK); popBit(leftAttacks);
 		int from = to + 7;
 		int captured = getWhitePieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_QUEEN, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_KNIGHT, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_BISHOP, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_ROOK, 0), list);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_QUEEN, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_KNIGHT, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_BISHOP, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_ROOK, 0);
 	}
 	while (leftAttacks) {
 		to = peekBit(leftAttacks); popBit(leftAttacks);
 		int from = to + 7;
-		int captured = getWhitePieceAt(position, 1ULL << to);
-		int move = generateMove(from, to, captured, BLACK_PAWN, 0, 0);
-		if (to == position.enPassantSquare) move = generateMove(from, to, WHITE_PAWN, BLACK_PAWN, 0, FLAG_EP);
-		addCaptureMove(position, move, list);
+		if (to == position.enPassantSquare) {
+			addCaptureMove(position, list, from, to, WHITE_PAWN, BLACK_PAWN, 0, FLAG_EP);
+		}
+		else {
+			int captured = getWhitePieceAt(position, 1ULL << to);
+			addCaptureMove(position, list, from, to, captured, BLACK_PAWN, 0, 0);
+		}
 	}
 
 	U64 rightAttacks = (position.pieceBB[BLACK_PAWN] >> 9) & NOT_FILE_H_MASK & (position.pieceBB[WHITE] | setMask[position.enPassantSquare]);
@@ -201,18 +216,21 @@ static void generateBlackPawnMoves(const Board &position, MoveList &list) {
 		to = peekBit(rightAttacks & RANK_1_MASK); popBit(rightAttacks);
 		int from = to + 9;
 		int captured = getWhitePieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_QUEEN, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_KNIGHT, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_BISHOP, 0), list);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_PAWN, BLACK_ROOK, 0), list);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_QUEEN, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_KNIGHT, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_BISHOP, 0);
+		addCaptureMove(position, list, from, to, captured, BLACK_PAWN, BLACK_ROOK, 0);
 	}
 	while (rightAttacks) {
 		to = peekBit(rightAttacks); popBit(rightAttacks);
 		int from = to + 9;
-		int captured = getWhitePieceAt(position, 1ULL << to);
-		int move = generateMove(from, to, captured, BLACK_PAWN, 0, 0);
-		if (to == position.enPassantSquare) move = generateMove(from, to, WHITE_PAWN, BLACK_PAWN, 0, FLAG_EP);
-		addCaptureMove(position, move, list);
+		if (to == position.enPassantSquare) {
+			addCaptureMove(position, list, from, to, WHITE_PAWN, BLACK_PAWN, 0, FLAG_EP);
+		}
+		else {
+			int captured = getWhitePieceAt(position, 1ULL << to);
+			addCaptureMove(position, list, from, to, captured, BLACK_PAWN, 0, 0);
+		}
 	}
 }
 
@@ -222,22 +240,22 @@ static void generateWhiteKingMoves(const Board &position, MoveList &list) {
 	int to;
 	while (moves) {
 		to = peekBit(moves); popBit(moves);
-		addQuietMove(position, generateMove(from, to, 0, WHITE_KING, 0, 0), list);
+		addQuietMove(position, list, from, to, WHITE_KING, 0, 0);
 	}
 	U64 attacks = kingAttacks[from] & position.pieceBB[BLACK];
 	while (attacks) {
 		to = peekBit(attacks); popBit(attacks);
 		int captured = getBlackPieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, WHITE_KING, 0, 0), list);
+		addCaptureMove(position, list, from, to, captured, WHITE_KING, 0, 0);
 	}
 	if ((position.castlePermissions & WHITE_KING_CASTLE) && ((position.emptyBB & 0x0000000000000060) == 0x0000000000000060)) {
 		if (!attackedByBlack(position, E1) && !attackedByBlack(position, F1)) {
-			addQuietMove(position, generateMove(E1, G1, 0, WHITE_KING, 0, FLAG_CA), list);
+			addQuietMove(position, list, E1, G1, WHITE_KING, 0, FLAG_CA);
 		}
 	}
 	if ((position.castlePermissions & WHITE_QUEEN_CASTLE) && ((position.emptyBB & 0x000000000000000E) == 0x000000000000000E)) {
 		if (!attackedByBlack(position, E1) && !attackedByBlack(position, D1)) {
-			addQuietMove(position, generateMove(E1, C1, 0, WHITE_KING, 0, FLAG_CA), list);
+			addQuietMove(position, list, E1, C1, WHITE_KING, 0, FLAG_CA);
 		}
 	}
 }
@@ -248,22 +266,22 @@ static void generateBlackKingMoves(const Board &position, MoveList &list) {
 	int to;
 	while (moves) {
 		to = peekBit(moves); popBit(moves);
-		addQuietMove(position, generateMove(from, to, 0, BLACK_KING, 0, 0), list);
+		addQuietMove(position, list, from, to, BLACK_KING, 0, 0);
 	}
 	U64 attacks = kingAttacks[from] & position.pieceBB[WHITE];
 	while (attacks) {
 		to = peekBit(attacks); popBit(attacks);
 		int captured = getWhitePieceAt(position, 1ULL << to);
-		addCaptureMove(position, generateMove(from, to, captured, BLACK_KING, 0, 0), list);
+		addCaptureMove(position, list, from, to, captured, BLACK_KING, 0, 0);
 	}
 	if ((position.castlePermissions & BLACK_KING_CASTLE) && ((position.emptyBB & 0x6000000000000000) == 0x6000000000000000)) {
 		if (!attackedByWhite(position, E8) && !attackedByWhite(position, F8)) {
-			addQuietMove(position, generateMove(E8, G8, 0, BLACK_KING, 0, FLAG_CA), list);
+			addQuietMove(position, list, E8, G8, BLACK_KING, 0, FLAG_CA);
 		}
 	}
 	if ((position.castlePermissions & BLACK_QUEEN_CASTLE) && ((position.emptyBB & 0x0E00000000000000) == 0x0E00000000000000)) {
 		if (!attackedByWhite(position, E8) && !attackedByWhite(position, D8)) {
-			addQuietMove(position, generateMove(E8, C8, 0, BLACK_KING, 0, FLAG_CA), list);
+			addQuietMove(position, list, E8, C8, BLACK_KING, 0, FLAG_CA);
 		}
 	}
 }

@@ -2,7 +2,6 @@
 #include "bitboards.h"
 #include "evaluate.h"
 #include "validate.h"
-#include "search.h"
 #include <string>
 #include <iostream>
 
@@ -82,8 +81,6 @@ void initBoard(Board &position, string fen) {
 	position.emptyBB = ~position.occupiedBB;
 
 	position.hashKey = generateHashKey(position);
-
-	initPVTable(position.pvTable);
 }
 
 bool checkHashKey(const Board &position) {

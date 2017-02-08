@@ -11,17 +11,20 @@ using namespace std;
 
 void search(Board &position) {
 	SearchInfo info;
-	info.depth = 4;
+	info.depth = 6;
 	searchPosition(position, info);
 }
 
 int main()
 {
 	const string STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	const string POS_1 = "2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - -";
+	const string POS_2 = "r1b1k2r/ppppnppp/2n2q2/2b5/3NP3/2P1B3/PP3PPP/RN1QKB1R w KQkq - 0 1";
 	initAll();
 	
 	Board position;
-	initBoard(position, "2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - -");
+	initBoard(position, POS_2);
+	initPVTable(position.pvTable);
 
 	while (true) {
 		cout << endl;
@@ -33,7 +36,7 @@ int main()
 		switch (input[0]) {
 			case 'q': return 0; break;
 			case 't': unmakeMove(position); break;
-			case 'p': perftDivided(STARTING_FEN, 6); break;
+			case 'p': perftDivided(STARTING_FEN, 5); break;
 			case 's': search(position); break;
 			default: makeMove(position, parseMove(position, input)); break;
 		}

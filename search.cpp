@@ -13,7 +13,7 @@ static void checkUp() {
 }
 
 static void clearForSearch(Board &position, SearchInfo &info) {
-	for (int i = 0; i < 13; i++) {
+	for (int i = 0; i < 14; i++) {
 		for (int j = 0; j < 64; j++) {
 			position.searchHistory[i][j] = 0;
 		}
@@ -46,14 +46,34 @@ static bool isRepetition(const Board &position) {
 	return false;
 }
 
-static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int depth, bool doNull) {
-	info.nodes++;
+static void pickNextMove(int moveNum, MoveList &list) {
+	int bestScore = 0;
+	int bestNum = moveNum;
+	
+	for (int i = moveNum; i < list.count; i++) {
+		if (list.moves[i].score > bestScore) {
+			bestScore = list.moves[i].score;
+			bestNum = i;
+		}
+	}
 
-	// pre-search checks
+	Move temp = list.moves[moveNum];
+	list.moves[moveNum] = list.moves[bestNum];
+	list.moves[bestNum] = temp;
+}
+
+static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
+	return evaluatePosition(position);
+}
+static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int depth, bool doNull) {
+	// pre-search checks,  By:Nithin Tammishetti
 
 	if (depth == 0) {
-		return evaluatePosition(position);
+		return quiescence(position, info, alpha, beta);
 	}
+
+	info.nodes++;
+
 	if (isRepetition(position) || position.fiftyMoveCounter >= 100) {
 		return 0;
 	}
@@ -69,7 +89,19 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 	int bestMove = -1;
 	int score = -100000;
 
+	int pvMove = probePVTable(position);
+	if (pvMove > 0) {
+		for (int i = 0; i < list.count; i++) {
+			if (list.moves[i].move == pvMove) {
+				list.moves[i].score = 20000000;
+				break;
+			}
+		}
+	}
+
 	for (int i = 0; i < list.count; i++) {
+		pickNextMove(i, list);
+
 		int move = list.moves[i].move;
 		if (!makeMove(position, move)) {
 			continue;
@@ -85,10 +117,20 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 					info.failHighFirst++;
 				}
 				info.failHigh++;
+
+				if (!isCapture(move)) {
+					position.searchKillers[1][position.ply] = position.searchKillers[0][position.ply];
+					position.searchKillers[0][position.ply] = move;
+				}
+
 				return beta;
 			}
 			alpha = score;
 			bestMove = move;
+
+			if (!isCapture(move)) {
+				position.searchHistory[moving(move)][to(move)] += depth;
+			}
 		}
 	}
 
@@ -106,10 +148,6 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 	}
 
 	return alpha;
-}
-
-static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
-
 }
 
 void searchPosition(Board &position, SearchInfo &info) {
@@ -131,5 +169,6 @@ void searchPosition(Board &position, SearchInfo &info) {
 		cout << " )" << endl;
 		if (info.failHigh == 0) info.failHigh = 1;
 		cout << "ordering: " << (info.failHighFirst / info.failHigh) * 100 << "%" << endl;
+		//Made by: Nithin Tammishetti , Akhil Velagapudi
 	}
 }
