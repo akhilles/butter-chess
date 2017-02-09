@@ -24,12 +24,15 @@ static void clearForSearch(Board &position, SearchInfo &info) {
 		}
 	}
 
+	position.hashTable.overWrite = 0;
+	position.hashTable.hit = 0;
+	position.hashTable.cut = 0;
 	position.ply = 0;
 
 	info.startTime = (long) GetTickCount64();
+
 	info.stopped = false;
 	info.nodes = 0;
-
 	info.failHigh = 0;
 	info.failHighFirst = 0;
 }
@@ -111,10 +114,6 @@ static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
 		}
 	}
 
-	if (oldAlpha != alpha) {
-		storePVMove(position, bestMove);
-	}
-
 	return alpha;
 }
 
@@ -135,15 +134,21 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 		return evaluatePosition(position);
 	}
 
+	int pvMove = -1;
+	int score = -100000;
+	if (probeHashEntry(position, pvMove, score, alpha, beta, depth)) {
+		position.hashTable.cut++;
+		return score;
+	}
+
 	MoveList list;
 	generateMoves(position, list);
 
 	int legal = 0;
 	int oldAlpha = alpha;
 	int bestMove = -1;
-	int score = -100000;
+	int bestScore = -100000;
 
-	int pvMove = probePVTable(position);
 	if (pvMove > 0) {
 		for (int i = 0; i < list.count; i++) {
 			if (list.moves[i].move == pvMove) {
@@ -162,35 +167,41 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 		}
 
 		legal++;
-		score = -alphaBeta(position, info, -beta, -alpha, depth - 1, true);
+		int score = -alphaBeta(position, info, -beta, -alpha, depth - 1, true);
 		unmakeMove(position);
 
-		if (score > alpha) {
-			if (score >= beta) {
-				if (legal == 1) {
-					info.failHighFirst++;
+		if (score > bestScore) {
+			bestScore = score;
+			bestMove = move;
+			if (score > alpha) {
+				if (score >= beta) {
+					if (legal == 1) {
+						info.failHighFirst++;
+					}
+					info.failHigh++;
+
+					if (!isCapture(move)) {
+						position.searchKillers[1][position.ply] = position.searchKillers[0][position.ply];
+						position.searchKillers[0][position.ply] = move;
+					}
+
+					storeHashEntry(position, bestMove, beta, depth, FLAG_BETA);
+
+					return beta;
 				}
-				info.failHigh++;
+				alpha = score;
+				bestMove = move;
 
 				if (!isCapture(move)) {
-					position.searchKillers[1][position.ply] = position.searchKillers[0][position.ply];
-					position.searchKillers[0][position.ply] = move;
+					position.searchHistory[moving(move)][to(move)] += depth;
 				}
-
-				return beta;
-			}
-			alpha = score;
-			bestMove = move;
-
-			if (!isCapture(move)) {
-				position.searchHistory[moving(move)][to(move)] += depth;
 			}
 		}
 	}
 
 	if (legal == 0) {
 		if (underCheck(position, position.side)) {
-			return -50000 + position.ply;
+			return -MATE_SCORE + position.ply;
 		}
 		else {
 			return 0;
@@ -198,7 +209,10 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 	}
 
 	if (oldAlpha != alpha) {
-		storePVMove(position, bestMove);
+		storeHashEntry(position, bestMove, bestScore, depth, FLAG_EXACT);
+	}
+	else {
+		storeHashEntry(position, bestMove, alpha, depth, FLAG_ALPHA);
 	}
 
 	return alpha;

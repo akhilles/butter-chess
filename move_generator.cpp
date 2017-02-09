@@ -465,10 +465,10 @@ void generateCaptures(const Board &position, MoveList &list) {
 	else {
 		generateBlackPawnCaptures(position, list);
 		generateBlackKingCaptures(position, list);
-		generatorRoutineWhiteCaptures(position, BLACK_KNIGHT, list);
-		generatorRoutineWhiteCaptures(position, BLACK_BISHOP, list);
-		generatorRoutineWhiteCaptures(position, BLACK_ROOK, list);
-		generatorRoutineWhiteCaptures(position, BLACK_QUEEN, list);
+		generatorRoutineBlackCaptures(position, BLACK_KNIGHT, list);
+		generatorRoutineBlackCaptures(position, BLACK_BISHOP, list);
+		generatorRoutineBlackCaptures(position, BLACK_ROOK, list);
+		generatorRoutineBlackCaptures(position, BLACK_QUEEN, list);
 	}
 }
 

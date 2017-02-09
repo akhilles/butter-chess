@@ -45,14 +45,26 @@ enum {
 	A8, B8, C8, D8, E8, F8, G8, H8,
 };
 
-struct PVEntry {
-	U64 hashKey;
-	int move;
+enum {
+	FLAG_NONE, FLAG_ALPHA, FLAG_BETA, FLAG_EXACT
 };
 
-struct PVTable {
-	PVEntry *entries;
+struct HashEntry {
+	U64 hashKey;
+	int move;
+	int score;
+	int depth;
+	int flags;
+};
+
+struct HashTable {
+	HashEntry *entries;
 	int numEntries;
+
+	int newWrite;
+	int overWrite;
+	int hit;
+	int cut;
 };
 
 struct Undo {
@@ -77,7 +89,7 @@ struct Board {
 	U64 hashKey;
 	Undo history[MAX_GAME_MOVES];
 
-	PVTable pvTable;
+	HashTable hashTable;
 	int pvArray[MAX_DEPTH];
 
 	int searchHistory[14][64];

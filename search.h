@@ -21,10 +21,9 @@ struct SearchInfo {
 	float failHighFirst;
 };
 
-extern void clearPVTable(PVTable &table);
-extern void initPVTable(PVTable &table);
-extern void storePVMove(Board &position, int move);
-extern int probePVTable(const Board &position);
+extern void initHashTable(HashTable &table);
+extern void storeHashEntry(Board &position, int move, int score, int depth, int flags);
+bool probeHashEntry(Board &position, int &move, int &score, int alpha, int beta, int depth);
 
 extern int getPV(Board &position, const int depth);
 

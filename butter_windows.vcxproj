@@ -121,7 +121,7 @@
     <ClCompile Include="make_move.cpp" />
     <ClCompile Include="move_generator.cpp" />
     <ClCompile Include="perft.cpp" />
-    <ClCompile Include="pv_table.cpp" />
+    <ClCompile Include="hash_table.cpp" />
     <ClCompile Include="search.cpp" />
   </ItemGroup>
   <ItemGroup>

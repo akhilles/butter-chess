@@ -11,7 +11,7 @@ using namespace std;
 
 void search(Board &position) {
 	SearchInfo info;
-	info.depth = 7;
+	info.depth = 6;
 	searchPosition(position, info);
 }
 
@@ -24,7 +24,7 @@ int main()
 	
 	Board position;
 	initBoard(position, POS_2);
-	initPVTable(position.pvTable);
+	initHashTable(position.hashTable);
 
 	while (true) {
 		cout << endl;
