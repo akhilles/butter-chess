@@ -123,6 +123,7 @@
     <ClCompile Include="perft.cpp" />
     <ClCompile Include="hash_table.cpp" />
     <ClCompile Include="search.cpp" />
+    <ClCompile Include="uci.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitboards.h" />
@@ -130,6 +131,7 @@
     <ClInclude Include="evaluate.h" />
     <ClInclude Include="move_generation.h" />
     <ClInclude Include="search.h" />
+    <ClInclude Include="uci.h" />
     <ClInclude Include="validate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

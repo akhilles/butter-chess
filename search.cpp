@@ -31,8 +31,6 @@ static void clearForSearch(Board &position, SearchInfo &info) {
 	position.hashTable.cut = 0;
 	position.ply = 0;
 
-	info.startTime = (long) GetTickCount64();
-
 	info.stopped = false;
 	info.nodes = 0;
 	info.failHigh = 0;
