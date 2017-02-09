@@ -11,7 +11,9 @@ using namespace std;
 
 void search(Board &position) {
 	SearchInfo info;
-	info.depth = 6;
+	info.depth = 9;
+	info.timeSet = true;
+	info.endTime = GetTickCount64() + 5000;
 	searchPosition(position, info);
 }
 

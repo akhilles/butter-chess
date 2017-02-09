@@ -7,8 +7,8 @@ struct SearchInfo {
 	long endTime;
 	int depth;
 
-	int depthSet;
-	int timeSet;
+	bool depthSet;
+	bool timeSet;
 	int movesToGo;
 
 	long nodes;
@@ -23,7 +23,7 @@ struct SearchInfo {
 
 extern void initHashTable(HashTable &table);
 extern void storeHashEntry(Board &position, int move, int score, int depth, int flags);
-bool probeHashEntry(Board &position, int &move, int &score, int alpha, int beta, int depth);
+extern bool probeHashEntry(Board &position, int &move, int &score, int alpha, int beta, int depth);
 
 extern int getPV(Board &position, const int depth);
 

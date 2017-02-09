@@ -7,9 +7,11 @@
 
 using namespace std;
 
-static void checkUp() {
+static void checkUp(SearchInfo &info) {
 	// check for interrupt from GUI
-
+	if (info.timeSet && GetTickCount64() > info.endTime) {
+		info.stopped = true;
+	}
 }
 
 static void clearForSearch(Board &position, SearchInfo &info) {
@@ -63,6 +65,10 @@ static void pickNextMove(int moveNum, MoveList &list) {
 }
 
 static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
+	if ((info.nodes & 8191) == 0) {
+		checkUp(info);
+	}
+
 	info.nodes++;
 
 	if (isRepetition(position) || position.fiftyMoveCounter >= 100) {
@@ -101,6 +107,10 @@ static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
 		score = -quiescence(position, info, -beta, -alpha);
 		unmakeMove(position);
 
+		if (info.stopped) {
+			return 0;
+		}
+
 		if (score > alpha) {
 			if (score >= beta) {
 				if (legal == 1) {
@@ -119,6 +129,9 @@ static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
 
 static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int depth, bool doNull) {
 	// pre-search checks
+	if ((info.nodes & 8191) == 0) {
+		checkUp(info);
+	}
 
 	if (depth == 0) {
 		//return evaluatePosition(position);
@@ -169,6 +182,10 @@ static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int
 		legal++;
 		int score = -alphaBeta(position, info, -beta, -alpha, depth - 1, true);
 		unmakeMove(position);
+
+		if (info.stopped) {
+			return 0;
+		}
 
 		if (score > bestScore) {
 			bestScore = score;
@@ -226,16 +243,21 @@ void searchPosition(Board &position, SearchInfo &info) {
 
 	for (int currentDepth = 1; currentDepth <= info.depth; currentDepth++) {
 		bestScore = alphaBeta(position, info, -100000, 100000, currentDepth, true);
+
+		if (info.stopped) {
+			break;
+		}
+
 		int pvMoves = getPV(position, currentDepth);
 		bestMove = position.pvArray[0];
 
-		cout << endl << "depth: " << currentDepth << ", score: " << bestScore << ", move: " << moveToString(bestMove) << ", # nodes: " << info.nodes << endl;
-		cout << "(";
+		cout << "info score cp " << bestScore << " depth " << currentDepth << " nodes " << info.nodes << " time " << GetTickCount64() - info.startTime << " pv";
 		for (int i = 0; i < pvMoves; i++) {
 			cout << " " << moveToString(position.pvArray[i]);
 		}
-		cout << " )" << endl;
+		cout << endl;
 		if (info.failHigh == 0) info.failHigh = 1;
-		cout << "ordering: " << (info.failHighFirst / info.failHigh) * 100 << "%" << endl;
+		//cout << "ordering: " << (info.failHighFirst / info.failHigh) * 100 << "%" << endl;
 	}
+	cout << "bestmove " << moveToString(bestMove) << endl;
 }
