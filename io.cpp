@@ -1,8 +1,11 @@
 #include "board.h"
 #include "bitboards.h"
 #include "move_generation.h"
+#include "search.h"
 #include <iostream>
 #include <string>
+#include <Windows.h>
+#include <io.h>
 
 using namespace std;
 
@@ -71,4 +74,48 @@ void printBoard(const Board &position) {
 	cout << endl;
 	cout << "en passant: " << numSquareToString(position.enPassantSquare) << endl;
 	cout << "hash key: " << hex << position.hashKey << dec << endl;
+}
+
+int inputWaiting() {
+	static int init = 0, pipe;
+	static HANDLE inh;
+	DWORD dw;
+
+	if (!init) {
+		init = 1;
+		inh = GetStdHandle(STD_INPUT_HANDLE);
+		pipe = !GetConsoleMode(inh, &dw);
+		if (!pipe) {
+			SetConsoleMode(inh, dw & ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
+			FlushConsoleInputBuffer(inh);
+		}
+	}
+	if (pipe) {
+		if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) return 1;
+		return dw;
+	}
+	else {
+		GetNumberOfConsoleInputEvents(inh, &dw);
+		return dw <= 1 ? 0 : dw;
+	}
+}
+
+void readInput(SearchInfo &info) {
+	int bytes;
+	char input[256] = "", *endc;
+	if (inputWaiting()) {
+		info.stopped = true;
+		do {
+			bytes = _read(_fileno(stdin), input, 256);
+		} while (bytes < 0);
+		endc = strchr(input, '\n');
+		if (endc) *endc = 0;
+
+		if (strlen(input) > 0) {
+			if (!strncmp(input, "quit", 4)) {
+				info.quit = true;
+			}
+		}
+		return;
+	}
 }

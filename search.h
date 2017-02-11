@@ -28,3 +28,5 @@ extern bool probeHashEntry(Board &position, int &move, int &score, int alpha, in
 extern int getPV(Board &position, const int depth);
 
 extern void searchPosition(Board &position, SearchInfo &info);
+
+extern void readInput(SearchInfo &info);

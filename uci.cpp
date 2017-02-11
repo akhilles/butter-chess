@@ -11,7 +11,7 @@ const string STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 const int INPUT_BUFFER = 500 * 6;
 
 void parseGo(Board &position, SearchInfo &info, char* input) {
-	int movesToGo = 30;
+	int movesToGo = 18;
 	int time = -1;
 	int increment = 0;
 	info.timeSet = false;
@@ -49,7 +49,7 @@ void parseGo(Board &position, SearchInfo &info, char* input) {
 	if (time != -1) {
 		info.timeSet = true;
 		time /= movesToGo;
-		info.endTime = info.startTime + time + increment;
+		info.endTime = info.startTime + time + increment - 50;
 	}
 	cout << "time: " << time;
 	cout << " startTime: " << info.startTime;
@@ -76,6 +76,7 @@ void parsePosition(Board &position, char* input) {
 		while (*ptr) {
 			int move = parseMove(position, ptr);
 			if (move < 0) break;
+			cout << moveToString(move) << endl;
 			makeMove(position, move);
 			while (*ptr && *ptr != ' ') {
 				ptr++;
@@ -89,13 +90,22 @@ void parsePosition(Board &position, char* input) {
 }
 
 void uci() {
+	setvbuf(stdin, NULL, _IONBF, 0);
+	setvbuf(stdout, NULL, _IONBF, 0);
+
 	Board position;
 	SearchInfo info;
 	initHashTable(position.hashTable);
 
 	char input[INPUT_BUFFER];
 	while (true) {
-		cin.getline(input, INPUT_BUFFER);
+		memset(&input[0], 0, sizeof(input));
+		fflush(stdout);
+		if (!fgets(input, INPUT_BUFFER, stdin))
+			continue;
+
+		if (input[0] == '\n')
+			continue;
 
 		if (!strncmp(input, "isready", 7)) {
 			cout << "readyok" << endl;
@@ -104,7 +114,7 @@ void uci() {
 			parsePosition(position, input);
 		}
 		else if (!strncmp(input, "ucinewgame", 10)) {
-			parsePosition(position, "startpos\n");
+			parsePosition(position, "position startpos\n");
 		}
 		else if (!strncmp(input, "go", 2)) {
 			parseGo(position, info, input);

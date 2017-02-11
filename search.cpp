@@ -12,6 +12,7 @@ static void checkUp(SearchInfo &info) {
 	if (info.timeSet && GetTickCount64() > info.endTime) {
 		info.stopped = true;
 	}
+	readInput(info);
 }
 
 static void clearForSearch(Board &position, SearchInfo &info) {
@@ -63,7 +64,7 @@ static void pickNextMove(int moveNum, MoveList &list) {
 }
 
 static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
-	if ((info.nodes & 8191) == 0) {
+	if ((info.nodes & 4095) == 0) {
 		checkUp(info);
 	}
 
@@ -127,7 +128,7 @@ static int quiescence(Board &position, SearchInfo &info, int alpha, int beta) {
 
 static int alphaBeta(Board &position, SearchInfo &info, int alpha, int beta, int depth, bool doNull) {
 	// pre-search checks
-	if ((info.nodes & 8191) == 0) {
+	if ((info.nodes & 4095) == 0) {
 		checkUp(info);
 	}
 
@@ -237,9 +238,13 @@ void searchPosition(Board &position, SearchInfo &info) {
 	int bestMove = -1;
 	int bestScore = -100000;
 
+	U64 time;
+
 	clearForSearch(position, info);
 
 	for (int currentDepth = 1; currentDepth <= info.depth; currentDepth++) {
+		time = GetTickCount64();
+
 		bestScore = alphaBeta(position, info, -100000, 100000, currentDepth, true);
 
 		if (info.stopped) {
@@ -254,8 +259,13 @@ void searchPosition(Board &position, SearchInfo &info) {
 			cout << " " << moveToString(position.pvArray[i]);
 		}
 		cout << endl;
-		if (info.failHigh == 0) info.failHigh = 1;
-		//cout << "ordering: " << (info.failHighFirst / info.failHigh) * 100 << "%" << endl;
+		
+		U64 currentTime = GetTickCount64();
+		U64 elapsed = currentTime - time;
+		U64 timeRemaining = info.endTime - currentTime;
+		if (info.timeSet && timeRemaining < elapsed * 5) {
+			info.stopped = true;
+		}
 	}
 	cout << "bestmove " << moveToString(bestMove) << endl;
 }

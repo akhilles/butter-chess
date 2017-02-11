@@ -1,7 +1,7 @@
 #pragma once
 
-const int MATE_SCORE = 50000;
-const int IS_MATE = 49936;
+const int MATE_SCORE = 29000;
+const int IS_MATE = 28936;
 
 const int pawnTableEarly[64] = {
    0,   0,   0,   0,   0,   0,   0,   0,

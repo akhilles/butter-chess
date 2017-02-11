@@ -3,7 +3,7 @@
 #include "evaluate.h"
 #include "move_generation.h"
 
-const int pvSize = 0x100000 * 16;
+const int pvSize = 0x100000 * 64;
 
 int probePV(const Board &position) {
 	int index = position.hashKey % position.hashTable.numEntries;
